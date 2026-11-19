@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZEAD IQ - تحدي الذكاء</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080d19;color:white;
+ font-family:Tahoma,Arial,sans-serif;
+ min-height:100vh;padding:20px;
+}
+.container{max-width:750px;margin:auto}
+header{text-align:center;padding:25px 10px}
+.logo{font-size:38px;font-weight:bold;color:#35e7ff}
+header p{color:#9aaac2}
+.stats{
+ display:flex;gap:10px;margin:15px 0;
+}
+.stat{
+ flex:1;background:#131e32;padding:15px;
+ border-radius:14px;text-align:center;
+ border:1px solid #263650;
+}
+.stat b{display:block;font-size:23px;color:#35e7ff;margin-top:7px}
+.groups{
+ display:grid;grid-template-columns:repeat(3,1fr);
+ gap:10px;margin:20px 0;
+}
+.group{
+ background:#17243a;color:white;border:1px solid #34445e;
+ padding:15px 5px;border-radius:12px;
+ cursor:pointer;font-weight:bold;
+}
+.group.active{background:#087f98;border-color:#35e7ff}
+.group:disabled{opacity:.35;cursor:not-allowed}
+.card{
+ background:#111c30;border:1px solid #263b59;
+ border-radius:20px;padding:24px;
+ margin-top:15px;
+}
+.progress{
+ height:9px;background:#25334a;
+ border-radius:20px;overflow:hidden;margin:15px 0 25px;
+}
+.bar{height:100%;width:0;background:#35e7ff;transition:.3s}
+.question-number{color:#35e7ff;font-size:14px}
+h2{font-size:21px;line-height:1.8}
+.answers{display:grid;gap:12px;margin-top:25px}
+.answer{
+ background:#1b2941;color:white;
+ border:1px solid #344762;
+ padding:16px;border-radius:12px;
+ text-align:right;font-size:16px;cursor:pointer;
+}
+.answer:hover:not(:disabled){border-color:#35e7ff}
+.answer:disabled{cursor:default;opacity:.9}
+.answer.correct{background:#125a40;border-color:#32db91}
+.answer.wrong{background:#762d39;border-color:#ff697b}
+.feedback{
+ margin-top:18px;padding:15px;
+ border-radius:12px;display:none;line-height:1.8;
+}
+.feedback.good{display:block;background:#104832;color:#a9ffcf}
+.feedback.bad{display:block;background:#52212b;color:#ffd0d5}
+.next{
+ width:100%;margin-top:20px;padding:16px;
+ background:#18bad1;color:#07131c;
+ border:0;border-radius:12px;font-size:17px;
+ font-weight:bold;cursor:pointer;display:none;
+}
+.reset{
+ background:transparent;color:#a9b8ce;
+ border:1px solid #40516b;padding:11px 16px;
+ border-radius:10px;cursor:pointer;margin-top:20px;
+}
+.locked{text-align:center;padding:30px;color:#9eacc1}
+.footer{text-align:center;color:#667993;font-size:12px;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+ <div class="logo">ZEAD IQ</div>
+ <h1>تحدي الذكاء</h1>
+ <p>اختبر قدراتك.. هل تستطيع اجتياز جميع المراحل؟</p>
+</header>
+
+<div class="stats">
+ <div class="stat">المجموعات المفتوحة<b id="unlocked">1</b></div>
+ <div class="stat">الإجابات الصحيحة<b id="score">0</b></div>
+ <div class="stat">نسبة الإنجاز<b id="percent">0%</b></div>
+</div>
+
+<div class="groups" id="groups"></div>
+
+<div class="card" id="game">
+ <div class="question-number" id="number"></div>
+ <div class="progress"><div class="bar" id="bar"></div></div>
+ <h2 id="question"></h2>
+ <div class="answers" id="answers"></div>
+ <div class="feedback" id="feedback"></div>
+ <button class="next" id="next">السؤال التالي ←</button>
+</div>
+
+<div style="text-align:center">
+ <button class="reset" onclick="resetGame()">إعادة ضبط اللعبة</button>
+</div>
+
+<div class="footer">ZEAD IQ © 2026 | تحدى نفسك</div>
+</div>
+
+<script>
+const groupsData = [
+{
+ name:"المجموعة الأولى",
+ questions:[
+  {
+   q:"ما الرقم التالي في المتتالية: 2، 6، 12، 20، 30، ؟",
+   a:["36","40","42","44"],c:2,
+   e:"الفروق هي 4، 6، 8، 10، ثم 12. إذن الإجابة 42."
+  },
+  {
+   q:"إذا كانت 5 آلات تصنع 5 قطع في 5 دقائق، فكم دقيقة تحتاج 100 آلة لصنع 100 قطعة؟",
+   a:["5 دقائق","20 دقيقة","100 دقيقة","500 دقيقة"],c:0,
+   e:"كل آلة تصنع قطعة واحدة في 5 دقائق، لذلك تعمل 100 آلة في نفس الوقت."
+  },
+  {
+   q:"مضرب وكرة ثمنهما معًا 110 جنيهات، والمضرب أغلى من الكرة بـ100 جنيه. كم ثمن الكرة؟",
+   a:["10 جنيهات","5 جنيهات","15 جنيهًا","20 جنيهًا"],c:1,
+   e:"الكرة بـ5 جنيهات والمضرب بـ105 جنيهات، والمجموع 110."
+  },
+  {
+   q:"ما أصغر زاوية بين عقربي الساعة عند الساعة 3:15؟",
+   a:["0 درجة","7.5 درجة","15 درجة","30 درجة"],c:1,
+   e:"عقرب الدقائق عند 90 درجة، وعقرب الساعات عند 97.5 درجة، والفرق 7.5."
+  },
+  {
+   q:"كان هناك 17 خروفًا، ماتت كلها ما عدا 9. كم خروفًا بقي؟",
+   a:["8","9","17","0"],c:1,
+   e:"السؤال يقول كلها ما عدا 9، إذن بقيت 9 خراف."
+  }
+ ]
+},
+{
+ name:"المجموعة الثانية",
+ questions:[
+  {
+   q:"ما الرقم التالي: 1، 1، 2، 3، 5، 8، ؟",
+   a:["11","12","13","15"],c:2,
+   e:"كل رقم يساوي مجموع الرقمين السابقين: 5 + 8 = 13."
+  },
+  {
+   q:"لديك 3 مفاتيح خارج غرفة مغلقة، وداخلها 3 مصابيح. كيف تعرف أي مفتاح لكل مصباح إذا دخلت الغرفة مرة واحدة فقط؟",
+   a:[
+    "أشغل المفاتيح الثلاثة معًا",
+    "أشغل الأول قليلًا ثم أطفئه، وأشغل الثاني، ثم أدخل",
+    "أشغل مفتاحًا واحدًا فقط",
+    "لا يمكن معرفة ذلك"
+   ],c:1,
+   e:"المصباح المضيء يتبع المفتاح الثاني، والدافئ المطفأ يتبع الأول، والبارد يتبع الثالث."
+  },
+  {
+   q:"لديك 8 كرات متطابقة في الشكل، واحدة أثقل من الباقي. ما أقل عدد من مرات استخدام الميزان ذي الكفتين لتحديدها؟",
+   a:["مرة واحدة","مرتان","3 مرات","4 مرات"],c:1,
+   e:"زن 3 مقابل 3. إذا تساوت فالثقيلة بين الكرتين المتبقيتين، وإلا خذ المجموعة الأثقل وزن 1 مقابل 1."
+  },
+  {
+   q:"رجل لديه 4 بنات، ولكل بنت أخ واحد. كم عدد أبنائه؟",
+   a:["4","5","8","9"],c:1,
+   e:"الأخ واحد مشترك بين البنات الأربع، إذن 4 بنات وولد واحد."
+  },
+  {
+   q:"في سباق، تجاوزت الشخص الذي يحتل المركز الثاني. ما مركزك الآن؟",
+   a:["الأول","الثاني","الثالث","الرابع"],c:1,
+   e:"أنت أخذت مكان صاحب المركز الثاني، فأصبحت في المركز الثاني."
+  }
+ ]
+},
+{
+ name:"المجموعة الثالثة",
+ questions:[
+  {
+   q:"ما العدد الذي إذا ضربته في نفسه ثم أضفت إليه نفس العدد كان الناتج 30؟",
+   a:["4","5","6","10"],c:1,
+   e:"5 × 5 + 5 = 30."
+  },
+  {
+   q:"إذا كان أمس هو اليوم الذي يسبق الخميس بيومين، فما اليوم؟",
+   a:["الثلاثاء","الأربعاء","الخميس","الجمعة"],c:2,
+   e:"اليوم الذي يسبق الخميس بيومين هو الثلاثاء، إذن أمس الثلاثاء واليوم الأربعاء."
+  },
+  {
+   q:"كم مرة يظهر الرقم 9 عند كتابة الأعداد من 1 إلى 100؟",
+   a:["10","11","19","20"],c:3,
+   e:"يظهر 10 مرات في خانة الآحاد و10 مرات في خانة العشرات، فيكون المجموع 20."
+  },
+  {
+   q:"لديك حبلان، كل حبل يحترق بالكامل في ساعة، لكن الاحتراق غير منتظم. كيف تقيس 45 دقيقة؟",
+   a:[
+    "أشعل الحبل الأول من طرف واحد والثاني من طرفين في نفس الوقت",
+    "أشعل الحبل الأول من الطرفين والثاني من طرف واحد، وعندما ينتهي الأول أشعل الطرف الآخر للثاني",
+    "أشعل الحبلين من طرف واحد",
+    "لا يمكن قياسها"
+   ],c:1,
+   e:"الأول ينتهي بعد 30 دقيقة، والثاني يكون قد بقي له 30 دقيقة من زمن الاحتراق؛ بإشعال طرفه الآخر ينتهي في 15 دقيقة إضافية."
+  },
+  {
+   q:"ما الرقم المفقود؟ 3، 9، 27، 81، ؟",
+   a:["162","189","243","324"],c:2,
+   e:"كل رقم يساوي الرقم السابق مضروبًا في 3، إذن 81 × 3 = 243."
+  }
+ ]
+}
+];
+
+let data = JSON.parse(localStorage.getItem("zeadIQ")) || {
+ solved: groupsData.map(()=>[]),
+ active:0
+};
+
+let current = 0;
+let answered = false;
+
+function save(){
+ localStorage.setItem("zeadIQ",JSON.stringify(data));
+}
+
+function isComplete(i){
+ return data.solved[i].length===5;
+}
+
+function isUnlocked(i){
+ return i===0 || isComplete(i-1);
+}
+
+function updateStats(){
+ let score=data.solved.reduce((s,g)=>s+g.length,0);
+ let unlocked=groupsData.filter((g,i)=>isUnlocked(i)).length;
+ document.getElementById("score").textContent=score;
+ document.getElementById("unlocked").textContent=unlocked;
+ document.getElementById("percent").textContent=
+ Math.round(score/15*100)+"%";
+}
+
+function renderGroups(){
+ const el=document.getElementById("groups");
+ el.innerHTML="";
+ groupsData.forEach((g,i)=>{
+  const btn=document.createElement("button");
+  btn.className="group"+(i===data.active?" active":"");
+  btn.disabled=!isUnlocked(i);
+  btn.textContent=(isComplete(i)?"✓ ":isUnlocked(i)?"🔓 ":"🔒 ")+g.name;
+  btn.onclick=()=>{data.active=i;current=0;save();render();};
+  el.appendChild(btn);
+ });
+}
+
+function render(){
+ updateStats();
+ renderGroups();
+ let i=data.active;
+ if(!isUnlocked(i)){
+  document.getElementById("game").innerHTML=
+  '<div class="locked"><h2>🔒 هذه المجموعة مغلقة</h2><p>أكمل المجموعة السابقة أولًا لفتحها.</p></div>';
+  return;
+ }
+
+ if(isComplete(i)){
+  document.getElementById("number").textContent="اكتملت المجموعة";
+  document.getElementById("bar").style.width="100%";
+  document.getElementById("question").textContent="🏆 أحسنت! لقد أجبت عن الأسئلة الخمسة كلها بشكل صحيح.";
+  document.getElementById("answers").innerHTML="";
+  document.getElementById("feedback").className="feedback good";
+  document.getElementById("feedback").textContent="تم فتح المجموعة التالية إن وجدت.";
+  document.getElementById("next").style.display="none";
+  return;
+ }
+
+ while(current<5 && data.solved[i].includes(current))current++;
+ if(current>=5){render();return;}
+
+ answered=false;
+ const q=groupsData[i].questions[current];
+ document.getElementById("number").textContent=
+ groupsData[i].name+" • السؤال "+(current+1)+" من 5";
+ document.getElementById("bar").style.width=
+ (data.solved[i].length*20)+"%";
+ document.getElementById("question").textContent=q.q;
+ document.getElementById("feedback").className="feedback";
+ document.getElementById("feedback").textContent="";
+ document.getElementById("next").style.display="none";
+
+ const answers=document.getElementById("answers");
+ answers.innerHTML="";
+ q.a.forEach((answer,j)=>{
+  const btn=document.createElement("button");
+  btn.className="answer";
+  btn.textContent=answer;
+  btn.onclick=()=>checkAnswer(j,btn);
+  answers.appendChild(btn);
+ });
+}
+
+function checkAnswer(choice,btn){
+ if(answered)return;
+ const i=data.active;
+ const q=groupsData[i].questions[current];
+ const feedback=document.getElementById("feedback");
+ const all=document.querySelectorAll(".answer");
+
+ if(choice===q.c){
+  answered=true;
+  all.forEach(b=>b.disabled=true);
+  btn.classList.add("correct");
+  data.solved[i].push(current);
+  save();
+  feedback.className="feedback good";
+  feedback.textContent="✓ إجابة صحيحة! "+q.e;
+  document.getElementById("bar").style.width=
+  (data.solved[i].length*20)+"%";
+  document.getElementById("next").style.display="block";
+  document.getElementById("next").textContent=
+  data.solved[i].length===5?"إنهاء المجموعة ✓":"السؤال التالي ←";
+  updateStats();
+ }else{
+  btn.classList.add("wrong");
+  btn.disabled=true;
+  feedback.className="feedback bad";
+  feedback.textContent="✗ إجابة غير صحيحة! حاول مرة أخرى.";
+ }
+}
+
+document.getElementById("next").onclick=()=>{
+ if(data.solved[data.active].length===5){
+  if(data.active<groupsData.length-1){
+   data.active++;
+   current=0;
+  }
+ }else{
+  current++;
+ }
+ save();
+ render();
+};
+
+function resetGame(){
+ if(!confirm("هل تريد مسح تقدمك والبدء من جديد؟"))return;
+ data={
+  solved:groupsData.map(()=>[]),
+  active:0
+ };
+ current=0;
+ save();
+ render();
+}
+
+render();
+</script>
+</body>
+</html>
